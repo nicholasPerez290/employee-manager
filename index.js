@@ -1,6 +1,7 @@
 const inquirer = require('inquirer');
 const mysql = require('mysql');
 const fs = require('fs');
+const password = require('./pass')
 const { listenerCount } = require('events');
 const connection = mysql.createConnection({
     host: 'localhost',
@@ -9,7 +10,7 @@ const connection = mysql.createConnection({
 
     user: 'root',
 
-    password: 'Qazwas01',
+    password: password,
     database: 'employee_db',
     multipleStatements: true,
 });
@@ -18,6 +19,7 @@ connection.connect(function(err) {
     console.log('connected');
 })
 // functions for initPrompt
+// viewing functions
 const viewDept = () => {
         let roleRq = 'select * from department'
         connection.query(roleRq, function (err, result) {
@@ -25,6 +27,26 @@ const viewDept = () => {
             console.table(result);
             initPrompt();
         })
+}
+const viewRoles = () => {
+    let sqlTble = `SELECT roles.title, roles.salary, department.dept_name 
+                        FROM roles
+                        INNER JOIN department ON roles.department_id=department.id;`
+        connection.query(sqlTble, function (err, result) {
+            if (err) throw err;
+            console.table(result);
+            initPrompt();
+        })
+}
+const viewEmploy = () => {
+    let sqlTble = `SELECT employees.first_name, employees.last_name, roles.title, roles.salary 
+                    FROM employees 
+                    INNER JOIN roles ON employees.role_id=roles.id;`;
+    connection.query(sqlTble, function (err, result) {
+        if (err) throw err;
+        console.table(result);
+        initPrompt();
+    })
 }
  const addDept = () => {
     inquirer.prompt([
@@ -46,26 +68,7 @@ const viewDept = () => {
     })
 })
  }
-const viewRoles = () => {
-    let sqlTble = `SELECT roles.title, roles.salary, department.dept_name 
-                        FROM roles
-                        INNER JOIN department ON roles.department_id=department.id;`
-        connection.query(sqlTble, function (err, result) {
-            if (err) throw err;
-            console.table(result);
-            initPrompt();
-        })
-}
-const viewEmploy = () => {
-        let sqlTble = `SELECT employees.first_name, employees.last_name, roles.title, roles.salary 
-                        FROM employees 
-                        INNER JOIN roles ON employees.role_id=roles.id;`;
-        connection.query(sqlTble, function (err, result) {
-            if (err) throw err;
-            console.table(result);
-            initPrompt();
-        })
-}
+//  adding functions
 const addRole = () => {
     connection.query('SELECT * FROM department', function(err, result) {
         if(err) throw err;
@@ -186,6 +189,30 @@ const editRole = () => {
     })
 })
 }
+const deleteEmploy = () => {
+    connection.query('SELECT * FROM employees',function(err, result){
+        if(err) throw err;
+        let resultAryEmp = [];
+        for(let i = 0; i < result.length; i++){
+            resultAryEmp.push(`${result[i].last_name}`)
+        }
+        inquirer.prompt([
+            {
+                type: 'list',
+                message: 'Select employee:',
+                name: 'emp',
+                choices: [...resultAryEmp]
+            },
+        ]).then((data) => {
+            connection.query(`DELETE FROM employees WHERE last_name= ?`, data.emp, function(err,result){
+                if(err) throw err;
+                
+                console.log('employee successfully removed')
+            })
+            initPrompt();
+        });
+})
+}
 const initPrompt = () => {
 inquirer.prompt([
     {
@@ -193,29 +220,29 @@ inquirer.prompt([
         message: 'What would you like to do?',
         name: 'whatToDo',
         choices: ['View employees', 'View departments',
-         'View roles', 'Add department', 'Add employee', 'Add role', 'Edit employee role']
+         'View roles', 'Add department', 'Add employee', 'Add role', 'Edit employee role','Delete employee']
     }
 ]).then((data) => {
     if(data.whatToDo === 'View employees'){
         viewEmploy();
+    }else if(data.whatToDo === 'View departments'){
+            viewDept();
+    }else if(data.whatToDo === 'View roles'){
+        viewRoles();
     }else if(data.whatToDo === 'Add employee'){
         addEmploy();
     }else if(data.whatToDo === 'Add department'){
         addDept();
-    }else if(data.whatToDo === 'View departments'){
-        viewDept();
-    }else if(data.whatToDo === 'View roles'){
-        viewRoles();
     }else if(data.whatToDo === 'Add role'){
         addRole();
     }else if(data.whatToDo === 'Edit employee role'){
         editRole();
+    }else if(data.whatToDo === 'Delete employee'){
+        deleteEmploy();
     }
 })
 }
 const init = () => {
-//   let roleResult = getRoles();
-//   let departmentResults = getDepartment();
     initPrompt();
 }
 init();

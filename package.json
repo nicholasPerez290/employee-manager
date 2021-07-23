@@ -18,6 +18,7 @@
   },
   "homepage": "https://github.com/nicholasPerez290/employee-manager#readme",
   "dependencies": {
+    "dotenv": "^10.0.0",
     "inquirer": "^8.1.2",
     "mysql": "^2.18.1"
   }
